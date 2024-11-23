@@ -124,6 +124,12 @@ for home_goals in range(max_goals + 1):
 prob_table = pd.DataFrame(probabilities)
 st.table(prob_table)
 
+st.subheader("Most Likely Outcome")
+st.write(
+    f"The most likely scoreline is **{most_likely_scoreline[0]}-{most_likely_scoreline[1]}** "
+    f"with a probability of **{most_likely_prob:.2f}%**."
+)
+
 # Submit Button
 if st.sidebar.button("Submit Prediction"):
     st.success("Prediction Submitted!")
