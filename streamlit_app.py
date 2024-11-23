@@ -113,9 +113,6 @@ probabilities = {
     "Probability (%)": [],
 }
 
-most_likely_scoreline = None
-most_likely_prob = 0
-
 for home_goals in range(max_goals + 1):
     for away_goals in range(max_goals + 1):
         prob = poisson_prob(home_expected_goals, home_goals) * poisson_prob(away_expected_goals, away_goals)
@@ -123,22 +120,25 @@ for home_goals in range(max_goals + 1):
         probabilities["Away Goals"].append(away_goals)
         probabilities["Probability (%)"].append(round(prob * 100, 2))
 
-        # Find the most likely scoreline
-        if prob > most_likely_prob:
-            most_likely_prob = prob
-            most_likely_scoreline = (home_goals, away_goals)
-
 # Display Probabilities as Table
 prob_table = pd.DataFrame(probabilities)
 st.table(prob_table)
 
-# Display Most Likely Outcome
 st.subheader("Most Likely Outcome")
 st.write(
     f"The most likely scoreline is **{most_likely_scoreline[0]}-{most_likely_scoreline[1]}** "
-    f"with a probability of **{most_likely_prob * 100:.2f}%**."
+    f"with a probability of **{most_likely_prob:.2f}%**."
 )
 
 # Submit Button
 if st.sidebar.button("Submit Prediction"):
     st.success("Prediction Submitted!")
+    st.subheader("Most Likely Outcome")
+     st.subheader("Most Likely Outcome")
+ st.subheader("Most Likely Outcome")
+st.write(
+    f"The most likely scoreline is **{most_likely_scoreline[0]}-{most_likely_scoreline[1]}** "
+    f"with a probability of **{most_likely_prob:.2f}%**."
+)
+
+
