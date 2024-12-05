@@ -38,7 +38,7 @@ data = fetch_forex_data(from_symbol, to_symbol)
 
 # Check if data is available
 if not data.empty:
-    # Since we only have one row, we can't compute a moving average, but we can simulate
+    # Since we only have one data point, we can't compute a moving average, but we can simulate
     # by repeating the data and applying a moving average
     data = data.append([data] * (ma_period - 1), ignore_index=True)  # Simulate multiple data points
     data['MA'] = data['Close'].rolling(ma_period).mean()
