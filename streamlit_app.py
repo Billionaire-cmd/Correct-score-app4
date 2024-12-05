@@ -2,45 +2,60 @@ import streamlit as st
 import pandas as pd
 import yfinance as yf
 
-# Title of the app
-st.title("Moving Average Strategy")
+# Streamlit app title
+st.title("Forex & Derivatives Trading System")
 
 # Sidebar for user inputs
 st.sidebar.header("User Inputs")
-stock_symbol = st.sidebar.text_input("Stock Symbol (e.g., AAPL, MSFT, TSLA)", "AAPL")
-start_date = st.sidebar.date_input("Start Date", pd.to_datetime("2020-01-01"))
-end_date = st.sidebar.date_input("End Date", pd.to_datetime("today"))
+pair = st.sidebar.selectbox("Select Forex Pair", ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "AUDUSD=X"])
+derivative_pair = st.sidebar.selectbox("Select Derivative Pair (e.g., CFD)", ["AAPL", "TSLA", "GOOG"])
+ma_period = st.sidebar.slider("Moving Average Period", 5, 100, 20)
 
-# Fetch stock data
-st.subheader(f"Data for {stock_symbol}")
-try:
-    # Download stock data
-    data = yf.download(stock_symbol, start=start_date, end=end_date)
+# Fetch data for selected Forex or Derivatives pair
+def fetch_data(pair, start_date="2020-01-01", end_date="today"):
+    data = yf.download(pair, start=start_date, end=end_date)
+    return data
 
-    # Check if data is retrieved
-    if data.empty:
-        st.error("No data found. Please enter a valid stock symbol or adjust the date range.")
-    else:
-        # Display raw data (optional)
-        if st.checkbox("Show Raw Data"):
-            st.write(data)
+# Function for calculating moving averages
+def add_moving_average(data, period):
+    data['MA'] = data['Close'].rolling(window=period).mean()
+    return data
 
-        # Ensure the required 'Close' column exists
-        if 'Close' not in data.columns:
-            st.error("The selected stock data does not have a 'Close' price column.")
+# Fetch and display data for selected pair
+if pair:
+    data = fetch_data(pair)
+    data = add_moving_average(data, ma_period)
+    
+    # Display data
+    st.subheader(f"Data for {pair}")
+    st.line_chart(data[['Close', 'MA']])
+
+    # Trading Strategy example (Simple Moving Average crossover)
+    if st.button("Run Strategy"):
+        if data['Close'].iloc[-1] > data['MA'].iloc[-1]:
+            st.success("Buy Signal")
         else:
-            # Moving average slider
-            ma_period = st.slider("Moving Average Period", min_value=5, max_value=100, value=20)
+            st.warning("Sell Signal")
 
-            # Calculate moving average
-            data['MA'] = data['Close'].rolling(window=ma_period).mean()
+# For Derivatives (example, using Apple stock CFD)
+if derivative_pair:
+    data = fetch_data(derivative_pair)
+    data = add_moving_average(data, ma_period)
 
-            # Check if the moving average was calculated properly
-            if 'MA' in data.columns:
-                # Line chart for closing prices and moving average
-                st.line_chart(data[['Close', 'MA']].dropna())  # drop NaN values to avoid errors
-            else:
-                st.error("Failed to calculate the moving average.")
+    # Display data
+    st.subheader(f"Data for {derivative_pair}")
+    st.line_chart(data[['Close', 'MA']])
 
-except Exception as e:
-    st.error(f"An unexpected error occurred: {e}")
+    # Implement strategy for derivative pair
+    if st.button("Run Strategy for Derivatives"):
+        if data['Close'].iloc[-1] > data['MA'].iloc[-1]:
+            st.success("Buy Signal for Derivative")
+        else:
+            st.warning("Sell Signal for Derivative")
+
+# Backtesting functionality
+st.sidebar.subheader("Backtesting")
+backtest_button = st.sidebar.button("Run Backtest")
+if backtest_button:
+    # Implement backtesting logic for selected pair
+    st.write("Running backtest...")
