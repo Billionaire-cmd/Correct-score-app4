@@ -10,3 +10,4 @@ requests
 datetime
 scikit-learn
 opencv-python-headless
+pytesseract
