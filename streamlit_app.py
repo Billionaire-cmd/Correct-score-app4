@@ -1,12 +1,14 @@
 import streamlit as st
 import pandas as pd
-from alpha_vantage.foreignexchange import ForeignExchange
+import v20
+import datetime
 
-# Your Alpha Vantage API Key (ensure it's a free plan key)
-api_key = 'your_alpha_vantage_api_key'  # Replace with your actual Alpha Vantage API key
+# OANDA API setup
+api_key = 'your_oanda_api_key'  # Replace with your OANDA API key
+account_id = 'your_oanda_account_id'  # Replace with your OANDA account ID
 
-# Create an instance of the ForeignExchange class
-fx = ForeignExchange(key=api_key)
+# Create an OANDA client instance
+client = v20.Client(access_token=api_key)
 
 # Streamlit app layout
 st.title("Forex Market Moving Average Strategy")
@@ -17,15 +19,25 @@ currency_pair = st.text_input("Enter Forex Pair (e.g., EUR/USD)", "EUR/USD").upp
 # Moving average period input
 ma_period = st.slider("Moving Average Period", 5, 100, 20)
 
-# Fetch Forex data using Alpha Vantage API
+# Fetch Forex data from OANDA API
 def fetch_forex_data(from_symbol, to_symbol):
     try:
-        # Use the 'get_currency_exchange_rate' method for free-tier users
-        data, meta_data = fx.get_currency_exchange_rate(from_symbol=from_symbol, to_symbol=to_symbol)
-        df = pd.DataFrame([data]).T  # Convert the returned data into a DataFrame
-        df.index = pd.to_datetime(df.index)  # Set the index as datetime (this will be a single row)
-        df = df[['5. Exchange Rate']].rename(columns={'5. Exchange Rate': 'Close'})
-        return df
+        # Set the start date and end date for the data retrieval
+        end_date = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+        start_date = (datetime.datetime.now() - datetime.timedelta(days=365)).strftime('%Y-%m-%dT%H:%M:%S')
+
+        # Fetch the data for the given currency pair
+        response = client.pricing.get(account_id, instruments=f"{from_symbol}_{to_symbol}")
+        prices = response.get('prices', [])
+
+        # Parse the data into a DataFrame
+        data = pd.DataFrame(prices)
+        data['time'] = pd.to_datetime(data['time'])
+        data.set_index('time', inplace=True)
+        data = data[['closeBid']]  # Use 'closeBid' as the closing price
+        data.rename(columns={'closeBid': 'Close'}, inplace=True)
+
+        return data
     except Exception as e:
         st.error(f"Error fetching data for {currency_pair}: {e}")
         return pd.DataFrame()  # Return empty DataFrame in case of error
@@ -38,9 +50,7 @@ data = fetch_forex_data(from_symbol, to_symbol)
 
 # Check if data is available
 if not data.empty:
-    # Since we only have one data point, we can't compute a moving average, but we can simulate
-    # by repeating the data and applying a moving average
-    data = data.append([data] * (ma_period - 1), ignore_index=True)  # Simulate multiple data points
+    # Calculate moving average
     data['MA'] = data['Close'].rolling(ma_period).mean()
 
     # Plot the data using Streamlit
