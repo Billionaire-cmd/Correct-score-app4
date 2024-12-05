@@ -13,7 +13,7 @@ if "portfolio" not in st.session_state:
     st.session_state.portfolio = pd.DataFrame(columns=["Asset", "Quantity", "Entry Price", "Profit/Loss", "Percentage Change"])
 
 # App Title
-st.title("🤖🤖🤖💯Advanced Trading Dashboard")
+st.title("🤖🤖🤖Advanced Trading Dashboard")
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
@@ -124,61 +124,50 @@ elif option == "Price Prediction":
     st.header("AI-Powered Price Prediction")
     st.subheader("Upload Historical Data for Predictions")
     
-    # File Upload
-    uploaded_file = st.file_uploader("Upload your historical price data (CSV format)", type=["csv"])
+    # File Upload (Allowing image/jpeg files)
+    uploaded_file = st.file_uploader("Upload your historical price data (CSV format or JPEG image)", type=["csv", "jpeg", "jpg"])
     
-    if uploaded_file:
-        data = pd.read_csv(uploaded_file)
-        if 'Date' in data.columns and 'Close' in data.columns:
-            st.write("Uploaded Data Preview:")
-            st.write(data.head())
-            
-            # Prepare Data
-            data['Date'] = pd.to_datetime(data['Date'])
-            data['Days'] = (data['Date'] - data['Date'].min()).dt.days
-            X = data[['Days']]
-            y = data['Close']
-            
-            # Train/Test Split
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train Model
-            model = LinearRegression()
-            model.fit(X_train, y_train)
-            
-            # Predict Future Prices
-            future_days = st.number_input("Number of Days to Predict:", min_value=1, max_value=365, value=30)
-            future = np.array([[data['Days'].max() + i] for i in range(1, future_days + 1)])
-            predictions = model.predict(future)
-            
-            # Display Predictions
-            st.write(f"Predicted Prices for the next {future_days} days:")
-            prediction_df = pd.DataFrame({'Day': future.flatten(), 'Predicted Price': predictions})
-            st.write(prediction_df)
-            
-            # Plot Predictions
-            st.line_chart(predictions)
-
-            # Moving Averages and Envelopes
-            data['MA_40'] = data['Close'].rolling(window=40).mean()
-            data['MA_15'] = data['Close'].rolling(window=15).mean()
-            data['MA_65'] = data['Close'].rolling(window=65).mean()
-            data['Upper Envelope'] = data['MA_40'] * (1 + 0.1)
-            data['Lower Envelope'] = data['MA_40'] * (1 - 0.1)
-
-            # Plot Moving Averages and Envelopes
-            fig, ax = plt.subplots(figsize=(10, 6))
-            ax.plot(data['Date'], data['Close'], label="Close Price")
-            ax.plot(data['Date'], data['MA_40'], label="40 Period Moving Average")
-            ax.plot(data['Date'], data['MA_15'], label="15 Period Moving Average")
-            ax.plot(data['Date'], data['MA_65'], label="65 Period Moving Average")
-            ax.plot(data['Date'], data['Upper Envelope'], label="Upper Envelope", linestyle='--')
-            ax.plot(data['Date'], data['Lower Envelope'], label="Lower Envelope", linestyle='--')
-            ax.set_xlabel("Date")
-            ax.set_ylabel("Price (USD)")
-            ax.set_title(f"{asset.capitalize()} Price with Moving Averages and Envelopes")
-            ax.legend()
-            st.pyplot(fig)
-
+    if uploaded_file is not None:
+        file_extension = uploaded_file.name.split('.')[-1].lower()
+        
+        # Check if the uploaded file is CSV
+        if file_extension == "csv":
+            data = pd.read_csv(uploaded_file)
+            if 'Date' in data.columns and 'Close' in data.columns:
+                st.write("Uploaded Data Preview:")
+                st.write(data.head())
+                
+                # Prepare Data for Prediction
+                data['Date'] = pd.to_datetime(data['Date'])
+                data['Days'] = (data['Date'] - data['Date'].min()).dt.days
+                X = data[['Days']]
+                y = data['Close']
+                
+                # Train/Test Split
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+                
+                # Train Model
+                model = LinearRegression()
+                model.fit(X_train, y_train)
+                
+                # Predict Future Prices
+                future_days = st.number_input("Number of Days to Predict:", min_value=1, max_value=365, value=30)
+                future = np.array([[data['Days'].max() + i] for i in range(1, future_days + 1)])
+                predictions = model.predict(future)
+                
+                # Display Predictions
+                st.write(f"Predicted Prices for the next {future_days} days:")
+                prediction_df = pd.DataFrame({'Day': future.flatten(), 'Predicted Price': predictions})
+                st.write(prediction_df)
+                
+                # Plot Predictions
+                st.line_chart(predictions)
+            else:
+                st.error("CSV must contain 'Date' and 'Close' columns!")
+        
+        # Check if the uploaded file is JPEG
+        elif file_extension in ["jpeg", "jpg"]:
+            st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+            st.success("JPEG image uploaded successfully!")
         else:
-            st.error("CSV must contain 'Date' and 'Close' columns!")
+            st.error("Unsupported file type! Please upload a CSV or JPEG image.")
