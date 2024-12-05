@@ -33,12 +33,12 @@ try:
             ma_period = st.slider("Moving Average Period", min_value=5, max_value=100, value=20)
 
             # Calculate moving average
-            data['MA'] = data['Close'].rolling(ma_period).mean()
+            data['MA'] = data['Close'].rolling(window=ma_period).mean()
 
             # Check if the moving average was calculated properly
             if 'MA' in data.columns:
                 # Line chart for closing prices and moving average
-                st.line_chart(data[['Close', 'MA']])
+                st.line_chart(data[['Close', 'MA']].dropna())  # drop NaN values to avoid errors
             else:
                 st.error("Failed to calculate the moving average.")
 
