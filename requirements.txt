@@ -8,3 +8,4 @@ yfinance
 plotly
 requests 
 datetime
+scikit-learn
