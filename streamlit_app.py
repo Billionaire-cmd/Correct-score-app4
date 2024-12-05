@@ -13,8 +13,14 @@ ma_period = st.sidebar.slider("Moving Average Period", 5, 100, 20)
 
 # Fetch data for selected Forex or Derivatives pair
 def fetch_data(pair, start_date="2020-01-01", end_date="today"):
-    data = yf.download(pair, start=start_date, end=end_date)
-    return data
+    try:
+        data = yf.download(pair, start=start_date, end=end_date)
+        if data.empty:
+            st.error(f"No data found for {pair}. Please check the ticker symbol.")
+        return data
+    except Exception as e:
+        st.error(f"Error fetching data for {pair}: {str(e)}")
+        return pd.DataFrame()  # Return an empty DataFrame in case of an error
 
 # Function for calculating moving averages
 def add_moving_average(data, period):
@@ -25,13 +31,12 @@ def add_moving_average(data, period):
 if pair:
     data = fetch_data(pair)
     
-    if data.empty:
-        st.error("Failed to retrieve data. Please check the ticker symbol.")
-    else:
+    if not data.empty:
         data = add_moving_average(data, ma_period)
 
-        # Debugging: Print column names
+        # Debugging: Print column names and first few rows of data
         st.write("Columns in the data:", data.columns)
+        st.write(data.head())
 
         # Display data
         st.subheader(f"Data for {pair}")
@@ -42,25 +47,19 @@ if pair:
         else:
             st.error("Required columns ('Close', 'MA') are missing in the data.")
 
-    # Trading Strategy example (Simple Moving Average crossover)
-    if st.button("Run Strategy"):
-        if 'Close' in data.columns and 'MA' in data.columns:
-            if data['Close'].iloc[-1] > data['MA'].iloc[-1]:
-                st.success("Buy Signal")
-            else:
-                st.warning("Sell Signal")
+    else:
+        st.error("Failed to retrieve valid data.")
 
 # For Derivatives (example, using Apple stock CFD)
 if derivative_pair:
     data = fetch_data(derivative_pair)
     
-    if data.empty:
-        st.error("Failed to retrieve data. Please check the ticker symbol.")
-    else:
+    if not data.empty:
         data = add_moving_average(data, ma_period)
 
-        # Debugging: Print column names
+        # Debugging: Print column names and first few rows of data
         st.write("Columns in the data:", data.columns)
+        st.write(data.head())
 
         # Display data
         st.subheader(f"Data for {derivative_pair}")
@@ -71,13 +70,8 @@ if derivative_pair:
         else:
             st.error("Required columns ('Close', 'MA') are missing in the data.")
 
-    # Implement strategy for derivative pair
-    if st.button("Run Strategy for Derivatives"):
-        if 'Close' in data.columns and 'MA' in data.columns:
-            if data['Close'].iloc[-1] > data['MA'].iloc[-1]:
-                st.success("Buy Signal for Derivative")
-            else:
-                st.warning("Sell Signal for Derivative")
+    else:
+        st.error("Failed to retrieve valid data.")
 
 # Backtesting functionality
 st.sidebar.subheader("Backtesting")
