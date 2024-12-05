@@ -9,4 +9,4 @@ plotly
 requests 
 datetime
 scikit-learn
-cv2
+opencv-python-headless
