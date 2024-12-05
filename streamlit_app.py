@@ -58,7 +58,7 @@ def place_trade(symbol, lot_size, trade_type):
         st.success(f"Trade successful: {result}")
 
 # Streamlit app interface
-st.title("MT5 Trading App")
+st.title("🤖🤖🤖 MT5 Trading App")
 
 # Connect to MT5
 if connect_to_mt5():
