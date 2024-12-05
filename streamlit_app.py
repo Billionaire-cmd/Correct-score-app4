@@ -24,34 +24,60 @@ def add_moving_average(data, period):
 # Fetch and display data for selected pair
 if pair:
     data = fetch_data(pair)
-    data = add_moving_average(data, ma_period)
     
-    # Display data
-    st.subheader(f"Data for {pair}")
-    st.line_chart(data[['Close', 'MA']])
+    if data.empty:
+        st.error("Failed to retrieve data. Please check the ticker symbol.")
+    else:
+        data = add_moving_average(data, ma_period)
+
+        # Debugging: Print column names
+        st.write("Columns in the data:", data.columns)
+
+        # Display data
+        st.subheader(f"Data for {pair}")
+        
+        # Check if 'Close' and 'MA' columns exist
+        if 'Close' in data.columns and 'MA' in data.columns:
+            st.line_chart(data[['Close', 'MA']])
+        else:
+            st.error("Required columns ('Close', 'MA') are missing in the data.")
 
     # Trading Strategy example (Simple Moving Average crossover)
     if st.button("Run Strategy"):
-        if data['Close'].iloc[-1] > data['MA'].iloc[-1]:
-            st.success("Buy Signal")
-        else:
-            st.warning("Sell Signal")
+        if 'Close' in data.columns and 'MA' in data.columns:
+            if data['Close'].iloc[-1] > data['MA'].iloc[-1]:
+                st.success("Buy Signal")
+            else:
+                st.warning("Sell Signal")
 
 # For Derivatives (example, using Apple stock CFD)
 if derivative_pair:
     data = fetch_data(derivative_pair)
-    data = add_moving_average(data, ma_period)
+    
+    if data.empty:
+        st.error("Failed to retrieve data. Please check the ticker symbol.")
+    else:
+        data = add_moving_average(data, ma_period)
 
-    # Display data
-    st.subheader(f"Data for {derivative_pair}")
-    st.line_chart(data[['Close', 'MA']])
+        # Debugging: Print column names
+        st.write("Columns in the data:", data.columns)
+
+        # Display data
+        st.subheader(f"Data for {derivative_pair}")
+        
+        # Check if 'Close' and 'MA' columns exist
+        if 'Close' in data.columns and 'MA' in data.columns:
+            st.line_chart(data[['Close', 'MA']])
+        else:
+            st.error("Required columns ('Close', 'MA') are missing in the data.")
 
     # Implement strategy for derivative pair
     if st.button("Run Strategy for Derivatives"):
-        if data['Close'].iloc[-1] > data['MA'].iloc[-1]:
-            st.success("Buy Signal for Derivative")
-        else:
-            st.warning("Sell Signal for Derivative")
+        if 'Close' in data.columns and 'MA' in data.columns:
+            if data['Close'].iloc[-1] > data['MA'].iloc[-1]:
+                st.success("Buy Signal for Derivative")
+            else:
+                st.warning("Sell Signal for Derivative")
 
 # Backtesting functionality
 st.sidebar.subheader("Backtesting")
