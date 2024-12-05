@@ -7,3 +7,4 @@ altair
 yfinance
 plotly
 requests
+MetaTrader5
