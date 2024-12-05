@@ -13,7 +13,7 @@ if "portfolio" not in st.session_state:
     st.session_state.portfolio = pd.DataFrame(columns=["Asset", "Quantity", "Entry Price", "Profit/Loss", "Percentage Change"])
 
 # App Title
-st.title("Advanced Trading Dashboard")
+st.title("🤖🤖🤖Advanced Trading Dashboard")
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
