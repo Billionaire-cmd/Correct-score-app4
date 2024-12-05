@@ -7,4 +7,4 @@ altair
 yfinance
 plotly
 requests
-
+alpha_vantage
