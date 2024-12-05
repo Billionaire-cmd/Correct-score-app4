@@ -158,5 +158,27 @@ elif option == "Price Prediction":
             
             # Plot Predictions
             st.line_chart(predictions)
+
+            # Moving Averages and Envelopes
+            data['MA_40'] = data['Close'].rolling(window=40).mean()
+            data['MA_15'] = data['Close'].rolling(window=15).mean()
+            data['MA_65'] = data['Close'].rolling(window=65).mean()
+            data['Upper Envelope'] = data['MA_40'] * (1 + 0.1)
+            data['Lower Envelope'] = data['MA_40'] * (1 - 0.1)
+
+            # Plot Moving Averages and Envelopes
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot(data['Date'], data['Close'], label="Close Price")
+            ax.plot(data['Date'], data['MA_40'], label="40 Period Moving Average")
+            ax.plot(data['Date'], data['MA_15'], label="15 Period Moving Average")
+            ax.plot(data['Date'], data['MA_65'], label="65 Period Moving Average")
+            ax.plot(data['Date'], data['Upper Envelope'], label="Upper Envelope", linestyle='--')
+            ax.plot(data['Date'], data['Lower Envelope'], label="Lower Envelope", linestyle='--')
+            ax.set_xlabel("Date")
+            ax.set_ylabel("Price (USD)")
+            ax.set_title(f"{asset.capitalize()} Price with Moving Averages and Envelopes")
+            ax.legend()
+            st.pyplot(fig)
+
         else:
             st.error("CSV must contain 'Date' and 'Close' columns!")
