@@ -5,3 +5,5 @@ matplotlib==3.9.2
 scipy
 altair
 yfinance
+plotly
+requests
