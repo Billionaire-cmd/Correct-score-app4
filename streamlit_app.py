@@ -1,49 +1,39 @@
 import streamlit as st
 import pandas as pd
-import yfinance as yf  # For fetching stock prices
-from datetime import datetime
+import requests
+import plotly.graph_objects as go
 
-# Title
-st.title("Trading Portfolio Tracker")
+# App Title
+st.title("Trading Analytics Dashboard")
 
-# Sample Portfolio
-st.subheader("Enter Your Trades")
+# Select Asset Type
+asset_type = st.selectbox("Select Asset Type", ["Cryptocurrency", "Stock", "Forex"])
 
-# User Inputs for the Portfolio
-asset = st.selectbox("Select Asset", ['AAPL', 'TSLA', 'GOOG', 'AMZN', 'BTC-USD'])
-quantity = st.number_input(f"Enter Quantity of {asset}", min_value=1)
-entry_price = st.number_input(f"Enter Entry Price for {asset}", min_value=1.0, step=0.1)
+# User Input for Ticker/Asset
+asset = st.text_input(f"Enter {asset_type} Symbol (e.g., BTC, AAPL, EUR/USD):", "BTC")
 
-# Fetch the latest market price
-def get_current_price(symbol):
-    data = yf.download(symbol, period="1d", interval="1m")
-    return data['Close'].iloc[-1]
+# Fetching Real-Time Data
+if st.button("Get Data"):
+    if asset_type == "Cryptocurrency":
+        url = f"https://api.coingecko.com/api/v3/coins/{asset.lower()}/market_chart?vs_currency=usd&days=7"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            prices = data['prices']
+            df = pd.DataFrame(prices, columns=['Timestamp', 'Price'])
+            df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='ms')
 
-# Get current price for the selected asset
-current_price = get_current_price(asset)
+            # Display Data Table
+            st.write(f"Last 7 Days Price Data for {asset.upper()}:")
+            st.write(df)
 
-# Calculate profit or loss
-profit_loss = (current_price - entry_price) * quantity
-percentage_change = (profit_loss / (entry_price * quantity)) * 100
+            # Plot Price Chart
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=df['Timestamp'], y=df['Price'], mode='lines', name=f"{asset.upper()} Price"))
+            fig.update_layout(title=f"{asset.upper()} Price Trend", xaxis_title="Date", yaxis_title="Price (USD)")
+            st.plotly_chart(fig)
 
-# Display Results
-st.write(f"Current Price of {asset}: ${current_price:.2f}")
-st.write(f"Profit/Loss: ${profit_loss:.2f}")
-st.write(f"Percentage Change: {percentage_change:.2f}%")
-
-# Store the portfolio in a dataframe
-if "portfolio" not in st.session_state:
-    st.session_state.portfolio = pd.DataFrame(columns=["Asset", "Quantity", "Entry Price", "Profit/Loss", "Percentage Change"])
-
-# Append new trade to portfolio
-new_trade = {"Asset": asset, "Quantity": quantity, "Entry Price": entry_price, 
-             "Profit/Loss": profit_loss, "Percentage Change": percentage_change}
-st.session_state.portfolio = st.session_state.portfolio.append(new_trade, ignore_index=True)
-
-# Show Portfolio
-st.subheader("Your Portfolio")
-st.write(st.session_state.portfolio)
-
-# Total Portfolio Performance
-total_value = st.session_state.portfolio["Profit/Loss"].sum()
-st.write(f"Total Portfolio Profit/Loss: ${total_value:.2f}")
+        else:
+            st.error("Failed to fetch data. Please check the asset name.")
+    else:
+        st.warning(f"Support for {asset_type} is coming soon!")
