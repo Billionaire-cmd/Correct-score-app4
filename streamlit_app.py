@@ -2,12 +2,13 @@ import streamlit as st
 import cv2
 import numpy as np
 import pytesseract
+from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 from PIL import Image
 
 # Function to extract price chart from uploaded image
 def process_image(uploaded_image):
-    # Convert the image to a numpy array and then to grayscale
+    # Convert the image to grayscale
     img = cv2.cvtColor(np.array(uploaded_image), cv2.COLOR_RGB2BGR)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
