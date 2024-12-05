@@ -6,5 +6,5 @@ scipy
 altair
 yfinance
 plotly
-requests
-pyyaml
+requests 
+v20 pyyaml
