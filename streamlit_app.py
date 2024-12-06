@@ -3,7 +3,7 @@ import finnhub
 
 # Set up the Finnhub API client
 api_key = "YOUR_FINNHUB_API_KEY"  # Replace with your Finnhub API key
-finnhub_client = finnhub.Client(api_key=api_key)
+finnhub_client = finnhub.Client(api_key=ct952upr01qt3llhear0ct952upr01qt3llhearg)
 
 # Streamlit app
 st.title("Live Market Trading Pairs")
