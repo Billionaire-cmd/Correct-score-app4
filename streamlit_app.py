@@ -7,23 +7,17 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from datetime import datetime
-import cv2
-import pytesseract
-from PIL import Image
-
-# Set Tesseract path for Windows (adjust if needed for Linux or macOS)
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Windows example
 
 # Initialize session state for portfolio
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = pd.DataFrame(columns=["Asset", "Quantity", "Entry Price", "Profit/Loss", "Percentage Change"])
 
 # App Title
-st.title("🤖🤖🤖 Advanced Trading Dashboard")
+st.title("🤖🤖🤖Advanced Trading Dashboard")
 
 # Sidebar Navigation
 st.sidebar.title("Navigation")
-option = st.sidebar.radio("Select a Page", ["Portfolio Tracker", "Market Analytics", "Price Prediction", "Trading Image Analysis"])
+option = st.sidebar.radio("Select a Page", ["Portfolio Tracker", "Market Analytics", "Price Prediction"])
 
 # Utility function: Fetch real-time prices
 def get_current_price(symbol):
@@ -130,68 +124,50 @@ elif option == "Price Prediction":
     st.header("AI-Powered Price Prediction")
     st.subheader("Upload Historical Data for Predictions")
     
-    # File Upload (Allowing CSV files)
-    uploaded_file = st.file_uploader("Upload your historical price data (CSV format)", type=["csv"])
+    # File Upload (Allowing image/jpeg files)
+    uploaded_file = st.file_uploader("Upload your historical price data (CSV format or JPEG image)", type=["csv", "jpeg", "jpg"])
     
     if uploaded_file is not None:
-        data = pd.read_csv(uploaded_file)
-        if 'Date' in data.columns and 'Close' in data.columns:
-            st.write("Uploaded Data Preview:")
-            st.write(data.head())
+        file_extension = uploaded_file.name.split('.')[-1].lower()
+        
+        # Check if the uploaded file is CSV
+        if file_extension == "csv":
+            data = pd.read_csv(uploaded_file)
+            if 'Date' in data.columns and 'Close' in data.columns:
+                st.write("Uploaded Data Preview:")
+                st.write(data.head())
                 
-            # Prepare Data for Prediction
-            data['Date'] = pd.to_datetime(data['Date'])
-            data['Days'] = (data['Date'] - data['Date'].min()).dt.days
-            X = data[['Days']]
-            y = data['Close']
+                # Prepare Data for Prediction
+                data['Date'] = pd.to_datetime(data['Date'])
+                data['Days'] = (data['Date'] - data['Date'].min()).dt.days
+                X = data[['Days']]
+                y = data['Close']
                 
-            # Train/Test Split
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+                # Train/Test Split
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
                 
-            # Train Model
-            model = LinearRegression()
-            model.fit(X_train, y_train)
+                # Train Model
+                model = LinearRegression()
+                model.fit(X_train, y_train)
                 
-            # Predict Future Prices
-            future_days = st.number_input("Number of Days to Predict:", min_value=1, max_value=365, value=30)
-            future = np.array([[data['Days'].max() + i] for i in range(1, future_days + 1)])
-            predictions = model.predict(future)
+                # Predict Future Prices
+                future_days = st.number_input("Number of Days to Predict:", min_value=1, max_value=365, value=30)
+                future = np.array([[data['Days'].max() + i] for i in range(1, future_days + 1)])
+                predictions = model.predict(future)
                 
-            # Display Predictions
-            st.write(f"Predicted Prices for the next {future_days} days:")
-            prediction_df = pd.DataFrame({'Day': future.flatten(), 'Predicted Price': predictions})
-            st.write(prediction_df)
+                # Display Predictions
+                st.write(f"Predicted Prices for the next {future_days} days:")
+                prediction_df = pd.DataFrame({'Day': future.flatten(), 'Predicted Price': predictions})
+                st.write(prediction_df)
                 
-            # Plot Predictions
-            st.line_chart(predictions)
+                # Plot Predictions
+                st.line_chart(predictions)
+            else:
+                st.error("CSV must contain 'Date' and 'Close' columns!")
+        
+        # Check if the uploaded file is JPEG
+        elif file_extension in ["jpeg", "jpg"]:
+            st.image(uploaded_file, caption="Uploaded Image", use_column_width=True)
+            st.success("JPEG image uploaded successfully!")
         else:
-            st.error("CSV must contain 'Date' and 'Close' columns!")
-
-# Page 4: Trading Image Analysis
-elif option == "Trading Image Analysis":
-    st.title("Trading Image Analysis: Support/Resistance, Demand/Supply")
-
-    # Image upload
-    uploaded_file = st.file_uploader("Upload an Image for Analysis", type=["jpg", "jpeg", "png"])
-
-    if uploaded_file is not None:
-        # Load the image
-        img = Image.open(uploaded_file)
-        
-        # Preprocess image
-        img_array, gray_img = preprocess_image(img)
-        
-        # Text extraction
-        extracted_text = extract_text_from_image(gray_img)
-        st.subheader("Extracted Text from Image")
-        st.write(extracted_text)
-        
-        # Perform analysis for support/resistance, demand/supply (simulated here)
-        analysis_result = analyze_trading_levels(gray_img)
-        
-        # Display the analysis
-        st.subheader("Analysis Results")
-        plot_analysis(img_array, analysis_result)
-        
-        # Optionally, add custom logic for snipers entry/exit based on your own strategy here
-        st.write("Sniper Entry/Exit positions could be determined from the analysis.")
+            st.error("Unsupported file type! Please upload a CSV or JPEG image.")
