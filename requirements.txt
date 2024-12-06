@@ -11,6 +11,4 @@ datetime
 opencv-python-headless
 pytesseract
 scikit-learn
-beautifulsoup4
-webdriver-manager
 tensorflow==2.9
