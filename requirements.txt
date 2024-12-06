@@ -11,3 +11,4 @@ datetime
 opencv-python-headless
 pytesseract
 scikit-learn
+beautifulsoup4
