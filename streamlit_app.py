@@ -1,37 +1,48 @@
 import streamlit as st
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+import time
+
+# Function to fetch trading pairs using Selenium
+def fetch_trading_pairs():
+    st.info("Fetching trading pairs... This may take a few seconds.")
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")  # Run in headless mode
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+
+    # Set up the Selenium driver
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    url = "https://www.tradingview.com/markets/"  # Replace with the correct TradingView URL
+    driver.get(url)
+
+    # Wait for the page to load
+    time.sleep(5)  # Adjust the delay as necessary
+
+    # Fetch trading pairs
+    trading_pairs = []
+    try:
+        elements = driver.find_elements(By.CSS_SELECTOR, ".tv-data-symbol-name")  # Adjust CSS selector
+        trading_pairs = [element.text for element in elements if element.text.strip()]
+    except Exception as e:
+        st.error(f"An error occurred while fetching data: {e}")
+    finally:
+        driver.quit()
+    
+    return trading_pairs
 
 # Streamlit app
 st.title("Live Market Trading Pairs - TradingView")
 
-# Function to fetch live trading pairs (web scraping example)
-def fetch_trading_pairs():
-    url = "https://www.tradingview.com/markets/"  # Replace with a valid TradingView markets URL
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.content, "html.parser")
-        trading_pairs = []
+# Fetch trading pairs and display them
+if st.button("Fetch Trading Pairs"):
+    trading_pairs = fetch_trading_pairs()
 
-        # Example of how to extract data from TradingView (depends on page structure)
-        for pair in soup.select(".tv-data-symbol-name"):  # Update selector based on TradingView structure
-            trading_pairs.append(pair.text)
-
-        return trading_pairs
+    if trading_pairs:
+        st.success(f"Fetched {len(trading_pairs)} trading pairs.")
+        selected_pair = st.selectbox("Select a trading pair to analyze:", trading_pairs)
+        st.write(f"You selected: {selected_pair}")
     else:
-        st.error("Failed to fetch data from TradingView.")
-        return []
-
-# Fetch and display trading pairs
-st.subheader("Available Trading Pairs")
-trading_pairs = fetch_trading_pairs()
-
-if trading_pairs:
-    st.write("Number of Trading Pairs:", len(trading_pairs))
-    for pair in trading_pairs:
-        st.write(pair)
-else:
-    st.warning("No trading pairs available.")
-
-# Run the app using: streamlit run script_name.py
+        st.warning("No trading pairs available. Please try again.")
