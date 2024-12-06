@@ -14,3 +14,4 @@ scikit-learn
 beautifulsoup4
 webdriver-manager
 finnhub-python
+tensorflow
