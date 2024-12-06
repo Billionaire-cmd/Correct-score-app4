@@ -11,4 +11,3 @@ datetime
 scikit-learn
 opencv-python-headless
 pytesseract
-talib
