@@ -8,6 +8,6 @@ yfinance
 plotly
 requests 
 datetime
-scikit-learn
 opencv-python-headless
 pytesseract
+scikit-learn
