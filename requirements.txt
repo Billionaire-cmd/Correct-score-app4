@@ -11,3 +11,4 @@ datetime
 scikit-learn
 opencv-python-headless
 pytesseract
+TA-Lib
