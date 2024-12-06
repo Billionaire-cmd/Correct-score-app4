@@ -1,48 +1,34 @@
 import streamlit as st
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-import time
+import finnhub
 
-# Function to fetch trading pairs using Selenium
-def fetch_trading_pairs():
-    st.info("Fetching trading pairs... This may take a few seconds.")
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # Run in headless mode
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-
-    # Set up the Selenium driver
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    url = "https://www.tradingview.com/markets/"  # Replace with the correct TradingView URL
-    driver.get(url)
-
-    # Wait for the page to load
-    time.sleep(5)  # Adjust the delay as necessary
-
-    # Fetch trading pairs
-    trading_pairs = []
-    try:
-        elements = driver.find_elements(By.CSS_SELECTOR, ".tv-data-symbol-name")  # Adjust CSS selector
-        trading_pairs = [element.text for element in elements if element.text.strip()]
-    except Exception as e:
-        st.error(f"An error occurred while fetching data: {e}")
-    finally:
-        driver.quit()
-    
-    return trading_pairs
+# Set up the Finnhub API client
+api_key = "YOUR_FINNHUB_API_KEY"  # Replace with your Finnhub API key
+finnhub_client = finnhub.Client(api_key=api_key)
 
 # Streamlit app
-st.title("Live Market Trading Pairs - TradingView")
+st.title("Live Market Trading Pairs")
 
-# Fetch trading pairs and display them
+# Dropdown to select a market
+markets = {
+    "US Stocks": "US",
+    "Forex": "FOREX",
+    "Cryptocurrency": "CRYPTO",
+    "Indices": "INDEX"
+}
+selected_market = st.selectbox("Select a market to fetch trading pairs:", list(markets.keys()))
+
+# Fetch trading pairs
 if st.button("Fetch Trading Pairs"):
-    trading_pairs = fetch_trading_pairs()
-
-    if trading_pairs:
-        st.success(f"Fetched {len(trading_pairs)} trading pairs.")
-        selected_pair = st.selectbox("Select a trading pair to analyze:", trading_pairs)
-        st.write(f"You selected: {selected_pair}")
-    else:
-        st.warning("No trading pairs available. Please try again.")
+    try:
+        # Fetch symbols based on selected market
+        market_type = markets[selected_market]
+        symbols = finnhub_client.stock_symbols(market_type.lower())
+        trading_pairs = [symbol['displaySymbol'] for symbol in symbols]
+        
+        if trading_pairs:
+            selected_pair = st.selectbox("Select a trading pair to analyze:", trading_pairs)
+            st.success(f"You selected: {selected_pair}")
+        else:
+            st.warning("No trading pairs found.")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
