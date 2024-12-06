@@ -17,7 +17,7 @@ symbols = [
     'GBPUSD=X'    # GBP/USD
 ]
 
-# Sidebar selection
+# Sidebar selection for trading pair
 selected_symbol = st.sidebar.selectbox("Choose a trading pair", symbols)
 
 # Timeframe options in minutes
@@ -36,13 +36,13 @@ selected_timeframe = st.sidebar.selectbox("Choose a timeframe", list(timeframe_o
 # Mapping the selected timeframe to the yfinance string format
 yf_timeframe = timeframe_options[selected_timeframe]
 
+# Submit analysis button
+submit_button = st.sidebar.button("Submit Analysis")
+
 # Function to fetch market data for the selected trading pair and timeframe
 def fetch_market_data(symbol, period="1d", interval="1m"):
     data = yf.download(symbol, period=period, interval=interval)
     return data
-
-# Fetch the data based on the selected symbol and timeframe
-market_data = fetch_market_data(selected_symbol, period="1d", interval=yf_timeframe)
 
 # Function to plot the closing prices
 def plot_closing_prices(data, symbol, timeframe):
@@ -55,5 +55,7 @@ def plot_closing_prices(data, symbol, timeframe):
     plt.grid(True)
     st.pyplot(plt)  # Display the plot in Streamlit
 
-# Plot the closing prices for the selected trading pair and timeframe
-plot_closing_prices(market_data, selected_symbol, selected_timeframe)
+# If the submit button is clicked, fetch and display the market data
+if submit_button:
+    market_data = fetch_market_data(selected_symbol, period="1d", interval=yf_timeframe)
+    plot_closing_prices(market_data, selected_symbol, selected_timeframe)
