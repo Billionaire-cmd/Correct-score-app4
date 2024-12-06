@@ -3,31 +3,12 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 # Set the title of the app
-st.title("Market Data Analyzer")
+st.title("Live Market Data Analysis")
 
-# Function to fetch forex and market data
-def fetch_forex_data(symbols, period="5d", interval="1h"):
-    data = {}
-    for symbol in symbols:
-        try:
-            # Download historical data for the forex symbol
-            forex_data = yf.download(symbol, period=period, interval=interval)
-            
-            # Store the data in the dictionary
-            data[symbol] = forex_data
+# Sidebar for selecting trading pair and timeframe
+st.sidebar.header("Select Trading Pair and Timeframe")
 
-            # Optionally: Save to a CSV file for future analysis
-            forex_data.to_csv(f"{symbol}_forex_data.csv")
-            
-            # Print a message confirming successful data fetching
-            print(f"Data for {symbol} fetched successfully!")
-        
-        except Exception as e:
-            print(f"Error fetching data for {symbol}: {e}")
-    
-    return data
-
-# List of symbols to fetch data for
+# List of trading pairs
 symbols = [
     'GBPJPY=X',   # GBP/JPY
     'USDJPY=X',   # USD/JPY
@@ -36,23 +17,43 @@ symbols = [
     'GBPUSD=X'    # GBP/USD
 ]
 
-# Fetch data for all symbols
-market_data = fetch_forex_data(symbols, period="5d", interval="1h")
+# Sidebar selection
+selected_symbol = st.sidebar.selectbox("Choose a trading pair", symbols)
 
-# Plot closing prices for each symbol
-def plot_closing_prices(market_data, symbols):
-    plt.figure(figsize=(12, 8))
+# Timeframe options in minutes
+timeframe_options = {
+    "1 Minute": "1m",
+    "5 Minutes": "5m",
+    "15 Minutes": "15m",
+    "30 Minutes": "30m",
+    "1 Hour": "1h",
+    "4 Hours": "4h"
+}
 
-    for symbol in symbols:
-        if symbol in market_data:
-            market_data[symbol]['Close'].plot(label=symbol)
+# Sidebar selection for timeframe
+selected_timeframe = st.sidebar.selectbox("Choose a timeframe", list(timeframe_options.keys()))
 
-    plt.title("Closing Prices for Forex and Market Pairs")
-    plt.xlabel('Date')
+# Mapping the selected timeframe to the yfinance string format
+yf_timeframe = timeframe_options[selected_timeframe]
+
+# Function to fetch market data for the selected trading pair and timeframe
+def fetch_market_data(symbol, period="1d", interval="1m"):
+    data = yf.download(symbol, period=period, interval=interval)
+    return data
+
+# Fetch the data based on the selected symbol and timeframe
+market_data = fetch_market_data(selected_symbol, period="1d", interval=yf_timeframe)
+
+# Function to plot the closing prices
+def plot_closing_prices(data, symbol, timeframe):
+    plt.figure(figsize=(12, 6))
+    data['Close'].plot(label=f'{symbol} Close Price')
+    plt.title(f'{symbol} Closing Price - {timeframe} Interval')
+    plt.xlabel('Time')
     plt.ylabel('Price (USD)')
     plt.legend()
     plt.grid(True)
     st.pyplot(plt)  # Display the plot in Streamlit
 
-# Call the function to plot data
-plot_closing_prices(market_data, symbols)
+# Plot the closing prices for the selected trading pair and timeframe
+plot_closing_prices(market_data, selected_symbol, selected_timeframe)
