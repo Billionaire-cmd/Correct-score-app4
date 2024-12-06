@@ -13,4 +13,4 @@ pytesseract
 scikit-learn
 beautifulsoup4
 webdriver-manager
-selenium
+finnhub-python
