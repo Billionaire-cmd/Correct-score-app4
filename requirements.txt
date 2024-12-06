@@ -15,5 +15,4 @@ beautifulsoup4
 webdriver-manager
 finnhub-py
 tensorflow==2.10
-Sequential
 tensorflow==2.9
