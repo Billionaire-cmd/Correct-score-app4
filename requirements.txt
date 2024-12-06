@@ -14,5 +14,4 @@ scikit-learn
 beautifulsoup4
 webdriver-manager
 finnhub-py
-tensorflow==2.10
 tensorflow==2.9
