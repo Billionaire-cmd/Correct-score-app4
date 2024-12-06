@@ -13,5 +13,5 @@ pytesseract
 scikit-learn
 beautifulsoup4
 webdriver-manager
-finnhub-python
-tensorflow
+finnhub-py
+tensorflow==2.10
