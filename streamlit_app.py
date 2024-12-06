@@ -1,107 +1,126 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-from scipy.stats import poisson
+import matplotlib.pyplot as plt
+import yfinance as yf
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, LSTM
 
-# Function to calculate probabilities for a Poisson distribution
-def poisson_prob(lambda1, lambda2, max_goals=5):
-    prob_matrix = np.zeros((max_goals + 1, max_goals + 1))
-    for i in range(max_goals + 1):
-        for j in range(max_goals + 1):
-            prob_matrix[i, j] = poisson.pmf(i, lambda1) * poisson.pmf(j, lambda2)
-    return prob_matrix
+# Function to calculate RSI
+def calculate_rsi(data, period=14):
+    delta = data.diff()
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+    avg_gain = gain.rolling(window=period, min_periods=1).mean()
+    avg_loss = loss.rolling(window=period, min_periods=1).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
-# Streamlit App Title
-st.title("🤖🤖🤖💯💯💯Rabiotic Football Score Prediction (Halftime & Full-Time)")
+# Function to fetch data and perform machine learning-based analysis
+def get_data(symbol='AAPL', start_date='2020-01-01'):
+    # Fetch historical data using yfinance
+    data = yf.download(symbol, start=start_date)
+    
+    # Calculate technical indicators
+    data['RSI'] = calculate_rsi(data['Close'])
+    data['SMA'] = data['Close'].rolling(window=50).mean()
+    data['EMA'] = data['Close'].ewm(span=50, adjust=False).mean()
+    
+    # Machine learning prediction model - features and labels
+    features = data[['RSI', 'SMA', 'EMA']].dropna()
+    target = data['Close'].shift(-1).dropna()  # Predict the next day's close price
+    
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, shuffle=False)
+    
+    # Standardize features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    
+    # Model: Random Forest Regressor (basic ML model)
+    rf_model = RandomForestRegressor(n_estimators=100)
+    rf_model.fit(X_train_scaled, y_train)
+    
+    # Predicting future price
+    predictions = rf_model.predict(X_test_scaled)
+    
+    return data, predictions
 
-# Sidebar Inputs
-st.sidebar.header("Team A Statistics")
-avg_goals_scored_a = st.sidebar.number_input("Avg. Goals Scored (Team A)", value=0.53, step=0.01)
-avg_goals_conceded_a = st.sidebar.number_input("Avg. Goals Conceded (Team A)", value=1.60, step=0.01)
+# Function to create a deep learning LSTM model for prediction
+def create_lstm_model(data):
+    # Reshape data for LSTM (time series prediction)
+    data = data[['Close']].values
+    data = data.reshape((data.shape[0], 1, data.shape[1]))
+    
+    model = Sequential()
+    model.add(LSTM(50, return_sequences=True, input_shape=(data.shape[1], data.shape[2])))
+    model.add(LSTM(50, return_sequences=False))
+    model.add(Dense(25))
+    model.add(Dense(1))
+    model.compile(optimizer='adam', loss='mean_squared_error')
+    
+    return model
 
-st.sidebar.header("Team B Statistics")
-avg_goals_scored_b = st.sidebar.number_input("Avg. Goals Scored (Team B)", value=1.47, step=0.01)
-avg_goals_conceded_b = st.sidebar.number_input("Avg. Goals Conceded (Team B)", value=0.80, step=0.01)
+# Streamlit UI
+st.title('Advanced Technical Analysis & Price Prediction')
 
-st.sidebar.header("Over/Under 2.5 Goals Probabilities")
-over_2_5 = st.sidebar.number_input("Over 2.5 Goals (%)", value=33.33, step=0.01, min_value=0.0, max_value=100.0)
-under_2_5 = st.sidebar.number_input("Under 2.5 Goals (%)", value=66.67, step=0.01, min_value=0.0, max_value=100.0)
+symbol = st.text_input('Enter stock symbol (e.g., AAPL, MSFT)', 'AAPL')
+start_date = st.date_input('Start Date', pd.to_datetime('2020-01-01'))
 
-# Calculate expected goals
-lambda_a_ft = (avg_goals_scored_a + avg_goals_conceded_b) / 1
-lambda_b_ft = (avg_goals_scored_b + avg_goals_conceded_a) / 2
-lambda_a_ht = lambda_a_ft * 0.45  # Halftime expected goals
-lambda_b_ht = lambda_b_ft * 0.45
+# Fetch data and machine learning model predictions
+data, predictions = get_data(symbol, str(start_date))
 
-# Add a submit button to the sidebar
-with st.sidebar:
-    st.markdown("### Submit Prediction")
-    if st.button("Submit Prediction"):
-        st.success("Prediction submitted! Results will be displayed below.")
+# Display data and technical indicators
+st.write(f"### {symbol} Data and Technical Indicators")
+st.write(data.tail())
 
-# Generate probabilities for halftime and full-time scores
-max_goals = 3  # Maximum goals to consider for calculation
-ht_prob_matrix = poisson_prob(lambda_a_ht, lambda_b_ht, max_goals)
-ft_prob_matrix = poisson_prob(lambda_a_ft, lambda_b_ft, max_goals)
+# Plotting technical indicators and closing price
+fig, ax = plt.subplots(figsize=(14, 7))
+ax.plot(data['Close'], label='Close Price', color='blue')
+ax.plot(data['SMA'], label='50-Day SMA', color='red')
+ax.plot(data['EMA'], label='50-Day EMA', color='green')
+ax.set_title(f"{symbol} - Price with Indicators")
+ax.set_xlabel("Date")
+ax.set_ylabel("Price")
+ax.legend()
+st.pyplot(fig)
 
-# Adjust probabilities based on Over/Under 2.5%
-over_weight = over_2_5 / 100
-under_weight = under_2_5 / 100
+# Plot predictions
+fig2, ax2 = plt.subplots(figsize=(14, 7))
+ax2.plot(data.index[-len(predictions):], predictions, label='Predicted Price', color='orange')
+ax2.plot(data['Close'].tail(len(predictions)), label='Actual Price', color='blue')
+ax2.set_title(f"{symbol} - Price Prediction vs Actual")
+ax2.set_xlabel("Date")
+ax2.set_ylabel("Price")
+ax2.legend()
+st.pyplot(fig2)
 
-# Halftime adjustments
-ht_adjusted_matrix = ht_prob_matrix * under_weight  # Halftime tends to have fewer goals
-ht_adjusted_matrix /= ht_adjusted_matrix.sum()  # Normalize probabilities
+# LSTM Model Prediction
+if st.button('Train LSTM Model'):
+    model = create_lstm_model(data)
+    data_for_lstm = data[['Close']].values
+    data_for_lstm = data_for_lstm.reshape((data_for_lstm.shape[0], 1, data_for_lstm.shape[1]))
+    
+    model.fit(data_for_lstm, data['Close'], epochs=5, batch_size=32)
+    lstm_predictions = model.predict(data_for_lstm)
+    
+    st.write(f"LSTM Model Prediction for {symbol}:")
+    st.write(lstm_predictions[-1])
 
-# Full-time adjustments
-ft_adjusted_matrix = ft_prob_matrix.copy()
-for i in range(max_goals + 1):
-    for j in range(max_goals + 1):
-        if i + j > 2:  # Scores greater than 2.5 goals
-            ft_adjusted_matrix[i, j] *= over_weight
-        else:  # Scores 2.5 goals or less
-            ft_adjusted_matrix[i, j] *= under_weight
-ft_adjusted_matrix /= ft_adjusted_matrix.sum()  # Normalize probabilities
+# Displaying technical analysis insights based on RSI
+if data['RSI'].iloc[-1] <= 9:
+    st.write("**RSI indicates Strong Buy (LL Entry)**")
+elif data['RSI'].iloc[-1] >= 90:
+    st.write("**RSI indicates Strong Sell (HH Entry)**")
+elif data['RSI'].iloc[-1] == 50:
+    st.write("**RSI indicates Take Profit (Resistance)**")
+elif data['RSI'].iloc[-1] == 80:
+    st.write("**RSI indicates Strong Sell (LH Entry)**")
+else:
+    st.write("**RSI indicates neutral position or hold**")
 
-# Create DataFrames for halftime and full-time probabilities
-ht_scores = []
-for i in range(max_goals + 1):
-    for j in range(max_goals + 1):
-        ht_scores.append({
-            "Score (A:B)": f"{i}:{j}",
-            "Probability": ht_adjusted_matrix[i, j]
-        })
-ht_df = pd.DataFrame(ht_scores).sort_values(by="Probability", ascending=False)
-ht_df["Probability"] = ht_df["Probability"].apply(lambda x: f"{x * 100:.2f}%")
-
-ft_scores = []
-for i in range(max_goals + 1):
-    for j in range(max_goals + 1):
-        ft_scores.append({
-            "Score (A:B)": f"{i}:{j}",
-            "Probability": ft_adjusted_matrix[i, j]
-        })
-ft_df = pd.DataFrame(ft_scores).sort_values(by="Probability", ascending=False)
-ft_df["Probability"] = ft_df["Probability"].apply(lambda x: f"{x * 100:.2f}%")
-
-# Display Results
-st.header("Prediction Results")
-st.subheader("Halftime Score Probabilities")
-st.dataframe(ht_df)
-
-st.subheader("Full-Time Score Probabilities")
-st.dataframe(ft_df)
-
-# Final Recommendation
-recommended_ht_score = ht_df.iloc[0]["Score (A:B)"]
-recommended_ht_prob = ht_df.iloc[0]["Probability"]
-recommended_ft_score = ft_df.iloc[0]["Score (A:B)"]
-recommended_ft_prob = ft_df.iloc[0]["Probability"]
-
-st.subheader("Final Recommendation")
-st.write(f"### Recommended Halftime Score: {recommended_ht_score} (Probability: {recommended_ht_prob})")
-st.write(f"### Recommended Full-Time Score: {recommended_ft_score} (Probability: {recommended_ft_prob})")
-
-# Provide Copy Option
-st.write("**Copy Recommendation:**")
-st.code(f"Halftime: {recommended_ht_score} (Probability: {recommended_ht_prob})\n"
-        f"Full-Time: {recommended_ft_score} (Probability: {recommended_ft_prob})")
