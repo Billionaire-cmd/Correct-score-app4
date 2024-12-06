@@ -8,9 +8,5 @@ yfinance
 plotly
 requests 
 datetime
-opencv-python-headless
-pytesseract
 scikit-learn
-tensorflow==2.9
-
-
+tensorflow
