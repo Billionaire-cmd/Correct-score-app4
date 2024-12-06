@@ -72,73 +72,75 @@ st.title('Advanced Technical Analysis & Price Prediction')
 symbol = st.text_input('Enter stock symbol (e.g., AAPL, MSFT)', 'AAPL')
 start_date = st.date_input('Start Date', pd.to_datetime('2020-01-01'))
 
-# Fetch data and machine learning model predictions
-data, predictions = get_data(symbol, str(start_date))
+# Sidebar for selecting trading pair and timeframe
+st.sidebar.header("Select Trading Pair and Timeframe")
+symbols = ['GBPJPY=X', 'USDJPY=X', 'XAUUSD=X', 'US30=X', 'GBPUSD=X']
+selected_symbol = st.sidebar.selectbox("Choose a trading pair", symbols)
 
-# Display data and technical indicators
-st.write(f"### {symbol} Data and Technical Indicators")
-st.write(data.tail())
+# Timeframe options
+timeframe_options = {
+    "1 Minute": "1m",
+    "5 Minutes": "5m",
+    "15 Minutes": "15m",
+    "30 Minutes": "30m",
+    "1 Hour": "1h",
+    "4 Hours": "4h"
+}
+selected_timeframe = st.sidebar.selectbox("Choose a timeframe", list(timeframe_options.keys()))
+yf_timeframe = timeframe_options[selected_timeframe]
 
-# Plotting technical indicators and closing price
-fig, ax = plt.subplots(figsize=(14, 7))
-ax.plot(data['Close'], label='Close Price', color='blue')
-ax.plot(data['SMA'], label='50-Day SMA', color='red')
-ax.plot(data['EMA'], label='50-Day EMA', color='green')
-ax.set_title(f"{symbol} - Price with Indicators")
-ax.set_xlabel("Date")
-ax.set_ylabel("Price")
-ax.legend()
-st.pyplot(fig)
+# Submit analysis button
+submit_button = st.sidebar.button("Submit Analysis")
 
-# Plot predictions
-fig2, ax2 = plt.subplots(figsize=(14, 7))
-ax2.plot(data.index[-len(predictions):], predictions, label='Predicted Price', color='orange')
-ax2.plot(data['Close'].tail(len(predictions)), label='Actual Price', color='blue')
-ax2.set_title(f"{symbol} - Price Prediction vs Actual")
-ax2.set_xlabel("Date")
-ax2.set_ylabel("Price")
-ax2.legend()
-st.pyplot(fig2)
-
-# LSTM Model Prediction
-if st.button('Train LSTM Model'):
-    model = create_lstm_model(data)
-    data_for_lstm = data[['Close']].values
-    data_for_lstm = data_for_lstm.reshape((data_for_lstm.shape[0], 1, data_for_lstm.shape[1]))
+# Fetch data and machine learning model predictions when button is clicked
+if submit_button:
+    data, predictions = get_data(selected_symbol, str(start_date))
     
-    model.fit(data_for_lstm, data['Close'], epochs=5, batch_size=32)
-    lstm_predictions = model.predict(data_for_lstm)
-    
-    st.write(f"LSTM Model Prediction for {symbol}:")
-    st.write(lstm_predictions[-1])
+    # Display data and technical indicators
+    st.write(f"### {selected_symbol} Data and Technical Indicators")
+    st.write(data.tail())
 
-# Displaying technical analysis insights based on RSI
-if data['RSI'].iloc[-1] <= 9:
-    st.write("**RSI indicates Strong Buy (LL Entry)**")
-    st.write("**Action: Execute Long Position**")
-elif data['RSI'].iloc[-1] >= 90:
-    st.write("**RSI indicates Strong Sell (HH Entry)**")
-    st.write("**Action: Execute Short Position**")
-elif data['RSI'].iloc[-1] == 50:
-    st.write("**RSI indicates Take Profit (Resistance)**")
-    st.write("**Action: Consider Taking Profit**")
-elif data['RSI'].iloc[-1] == 80:
-    st.write("**RSI indicates Strong Sell (LH Entry)**")
-    st.write("**Action: Prepare to Exit Position**")
-else:
-    st.write("**RSI indicates neutral position or hold**")
-    st.write("**Action: Hold Position for Now**")
+    # Plotting technical indicators and closing price
+    fig, ax = plt.subplots(figsize=(14, 7))
+    ax.plot(data['Close'], label='Close Price', color='blue')
+    ax.plot(data['SMA'], label='50-Day SMA', color='red')
+    ax.plot(data['EMA'], label='50-Day EMA', color='green')
+    ax.set_title(f"{selected_symbol} - Price with Indicators")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Price")
+    ax.legend()
+    st.pyplot(fig)
 
-# Trade Scaling Recommendations based on predictions
-if predictions[-1] > data['Close'].iloc[-1]:
-    st.write("**Trade Execution Recommendation:** Enter Long Position. Price is expected to rise.")
-    st.write("**Scaling Strategy:** Consider increasing position size as price moves upward towards predicted target.")
-else:
-    st.write("**Trade Execution Recommendation:** Enter Short Position. Price is expected to fall.")
-    st.write("**Scaling Strategy:** If price drops as predicted, consider adding more to the short position for higher gains.")
+    # Plot predictions
+    fig2, ax2 = plt.subplots(figsize=(14, 7))
+    ax2.plot(data.index[-len(predictions):], predictions, label='Predicted Price', color='orange')
+    ax2.plot(data['Close'].tail(len(predictions)), label='Actual Price', color='blue')
+    ax2.set_title(f"{selected_symbol} - Price Prediction vs Actual")
+    ax2.set_xlabel("Date")
+    ax2.set_ylabel("Price")
+    ax2.legend()
+    st.pyplot(fig2)
 
-# Exit Strategy based on LSTM and Technical Indicators
-if lstm_predictions[-1] > data['Close'].iloc[-1]:
-    st.write("**Exit Strategy:** If price continues upward, scale out of position near resistance levels.")
-else:
-    st.write("**Exit Strategy:** If price continues downward, consider closing short positions near support levels.")
+    # LSTM Model Prediction
+    if st.button('Train LSTM Model'):
+        model = create_lstm_model(data)
+        data_for_lstm = data[['Close']].values
+        data_for_lstm = data_for_lstm.reshape((data_for_lstm.shape[0], 1, data_for_lstm.shape[1]))
+        
+        model.fit(data_for_lstm, data['Close'], epochs=5, batch_size=32)
+        lstm_predictions = model.predict(data_for_lstm)
+        
+        st.write(f"LSTM Model Prediction for {selected_symbol}:")
+        st.write(lstm_predictions[-1])
+
+    # Displaying technical analysis insights based on RSI
+    if data['RSI'].iloc[-1] <= 9:
+        st.write("**RSI indicates Strong Buy (LL Entry)**")
+    elif data['RSI'].iloc[-1] >= 90:
+        st.write("**RSI indicates Strong Sell (HH Entry)**")
+    elif data['RSI'].iloc[-1] == 50:
+        st.write("**RSI indicates Take Profit (Resistance)**")
+    elif data['RSI'].iloc[-1] == 80:
+        st.write("**RSI indicates Strong Sell (LH Entry)**")
+    else:
+        st.write("**RSI indicates neutral position or hold**")
