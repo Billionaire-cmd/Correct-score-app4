@@ -12,3 +12,8 @@ opencv-python-headless
 pytesseract
 scikit-learn
 tensorflow==2.9
+StandardScaler
+Dense
+LSTM
+Sequential
+RandomForestRegressor
