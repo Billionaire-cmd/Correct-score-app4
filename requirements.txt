@@ -12,3 +12,5 @@ opencv-python-headless
 pytesseract
 scikit-learn
 beautifulsoup4
+webdriver-manager
+selenium
