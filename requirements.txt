@@ -9,5 +9,3 @@ plotly
 requests 
 datetime
 scikit-learn
-tensorflow
-finnhub-python
