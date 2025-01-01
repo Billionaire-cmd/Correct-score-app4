@@ -4,5 +4,5 @@ matplotlib==3.9.2
 scipy
 altair
 requests 
-pandas_ta
-squeeze_pro
+
+
