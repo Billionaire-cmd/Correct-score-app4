@@ -5,5 +5,5 @@ matplotlib==3.9.2
 scipy
 altair
 requests 
-libta-lib0-dev
+
 
