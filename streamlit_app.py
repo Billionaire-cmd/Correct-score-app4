@@ -4,7 +4,7 @@ import time
 
 # Configure Streamlit App
 st.set_page_config(page_title="Real-Time Trading Advisor", layout="wide")
-st.title("📉📈Rabiotic Real-Time Trading Advisor for Swing & Scalping")
+st.title("📉📈🤖Rabiotic Real-Time Trading Advisor for Swing & Scalping")
 
 # Dropdown for market symbols
 market_symbols = [
