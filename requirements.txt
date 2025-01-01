@@ -4,5 +4,5 @@ matplotlib==3.9.2
 scipy
 altair
 requests 
-pandas_ta==0.3.14b0
 pandas_ta
+setuptools
