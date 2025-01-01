@@ -4,7 +4,7 @@ import time
 
 # App Configuration
 st.set_page_config(page_title="Trading Strategy Advisor", layout="wide")
-st.title("Trading Strategy Advisor with 💯 Reliable Recommendations")
+st.title("📈📉🤖Rabiotic Trading Strategy Advisor with 💯 Reliable Recommendations")
 
 # Dropdown for market symbols
 market_symbols = [
