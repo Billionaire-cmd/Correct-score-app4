@@ -1,7 +1,6 @@
 import streamlit as st
-import pandas as pd
-import pandas_ta as ta
-import random
+import requests
+import time
 
 # Configure Streamlit App
 st.set_page_config(page_title="Real-Time Trading Advisor", layout="wide")
@@ -32,44 +31,96 @@ ema_long_period = st.sidebar.slider("Long EMA Period", 20, 200, 30)
 bb_period = st.sidebar.slider("Bollinger Bands Period", 5, 50, 20)
 bb_dev = st.sidebar.slider("Bollinger Bands Deviation", 0.5, 3.0, 2.0)
 
-# Generate simulated real-time data
+# Fetch real-time market data
 def fetch_market_data(symbol, timeframe):
-    data_length = 100
-    data = {
-        "time": pd.date_range(start="2025-01-01", periods=data_length, freq="1min"),
-        "open": [random.uniform(100, 200) for _ in range(data_length)],
-        "high": [random.uniform(100, 200) for _ in range(data_length)],
-        "low": [random.uniform(100, 200) for _ in range(data_length)],
-        "close": [random.uniform(100, 200) for _ in range(data_length)],
-    }
-    return pd.DataFrame(data)
+    # Example API request (replace this with your actual data source)
+    url = f"https://api.example.com/get_data?symbol={symbol}&timeframe={timeframe}"
+    response = requests.get(url)
+    data = response.json()  # Assuming the API returns JSON data
+    return data
 
-# Fetch and display market data
-df = fetch_market_data(selected_symbol, selected_timeframe)
+# Calculate RSI (Relative Strength Index)
+def calculate_rsi(prices, period):
+    gains = [max(prices[i] - prices[i-1], 0) for i in range(1, len(prices))]
+    losses = [max(prices[i-1] - prices[i], 0) for i in range(1, len(prices))]
+    avg_gain = sum(gains[:period]) / period
+    avg_loss = sum(losses[:period]) / period
+    
+    rsi = []
+    rsi.append(100 - (100 / (1 + avg_gain / avg_loss)))
+    
+    for i in range(period, len(prices)):
+        gain = max(prices[i] - prices[i-1], 0)
+        loss = max(prices[i-1] - prices[i], 0)
+        avg_gain = (avg_gain * (period - 1) + gain) / period
+        avg_loss = (avg_loss * (period - 1) + loss) / period
+        rs = avg_gain / avg_loss if avg_loss != 0 else float('inf')
+        rsi.append(100 - (100 / (1 + rs)))
+    
+    return rsi
 
-# Calculate technical indicators using pandas_ta
-df['RSI'] = ta.rsi(df['close'], length=rsi_period)
-df['EMA_Short'] = ta.ema(df['close'], length=ema_short_period)
-df['EMA_Long'] = ta.ema(df['close'], length=ema_long_period)
-bb = ta.bbands(df['close'], length=bb_period, std=bb_dev)
-df['BB_Upper'] = bb['BBU_{}'.format(bb_period)]
-df['BB_Lower'] = bb['BBL_{}'.format(bb_period)]
+# Calculate EMA (Exponential Moving Average)
+def calculate_ema(prices, period):
+    ema = [sum(prices[:period]) / period]
+    multiplier = 2 / (period + 1)
+    for price in prices[period:]:
+        ema.append((price - ema[-1]) * multiplier + ema[-1])
+    return ema
+
+# Calculate Bollinger Bands
+def calculate_bollinger_bands(prices, period, dev):
+    sma = [sum(prices[:period]) / period]
+    for i in range(period, len(prices)):
+        sma.append(sum(prices[i-period:i]) / period)
+    
+    upper_band = []
+    lower_band = []
+    for i in range(period, len(prices)):
+        rolling_std = (sum((prices[i-period:i] - sma[i-period])**2) / period) ** 0.5
+        upper_band.append(sma[i] + dev * rolling_std)
+        lower_band.append(sma[i] - dev * rolling_std)
+    
+    return upper_band, lower_band
+
+# Generate simulated market data (or fetch real-time data)
+market_data = fetch_market_data(selected_symbol, selected_timeframe)
+close_prices = [entry['close'] for entry in market_data]
+
+# Calculate indicators
+rsi = calculate_rsi(close_prices, rsi_period)[-1]
+ema_short = calculate_ema(close_prices, ema_short_period)[-1]
+ema_long = calculate_ema(close_prices, ema_long_period)[-1]
+upper_band, lower_band = calculate_bollinger_bands(close_prices, bb_period, bb_dev)
+
+# Latest data
+latest_close = close_prices[-1]
+latest_upper_band = upper_band[-1]
+latest_lower_band = lower_band[-1]
 
 # Display data and indicators
 st.subheader("Market Data with Indicators")
-st.dataframe(df.tail(10))
+st.write(f"Latest Close Price: {latest_close}")
+st.write(f"RSI: {rsi}")
+st.write(f"Short EMA: {ema_short}")
+st.write(f"Long EMA: {ema_long}")
+st.write(f"Bollinger Bands: Upper - {latest_upper_band}, Lower - {latest_lower_band}")
 
-# Provide trading recommendations
-latest = df.iloc[-1]
-rsi = latest['RSI']
+# Apply Strategy to Determine Trading Signals
 advice = None
-if rsi < 30 and latest['close'] < latest['BB_Lower'] and latest['EMA_Short'] > latest['EMA_Long']:
+
+# Strategy Logic (you can expand or refine this logic)
+if rsi < 30 and latest_close < latest_lower_band and ema_short > ema_long:
     advice = "Strong BUY Signal (Oversold Conditions)"
-elif rsi > 70 and latest['close'] > latest['BB_Upper'] and latest['EMA_Short'] < latest['EMA_Long']:
+elif rsi > 70 and latest_close > latest_upper_band and ema_short < ema_long:
     advice = "Strong SELL Signal (Overbought Conditions)"
+elif ema_short > ema_long:
+    advice = "BUY Signal (Uptrend)"
+elif ema_short < ema_long:
+    advice = "SELL Signal (Downtrend)"
 else:
     advice = "No clear trading signal. Hold for now."
 
+# Display Advice
 st.subheader("Trading Advice")
 st.write(f"**Symbol**: {selected_symbol}")
 st.write(f"**Timeframe**: {selected_timeframe}")
@@ -81,9 +132,9 @@ if rsi < 30:
     st.write("Scalping: Potential quick entry for BUY at oversold levels.")
 if rsi > 70:
     st.write("Scalping: Potential quick entry for SELL at overbought levels.")
-if latest['EMA_Short'] > latest['EMA_Long']:
+if ema_short > ema_long:
     st.write("Swing Trading: BUY trend confirmed with EMA crossover.")
-elif latest['EMA_Short'] < latest['EMA_Long']:
+elif ema_short < ema_long:
     st.write("Swing Trading: SELL trend confirmed with EMA crossover.")
 
 # Real-time updates
@@ -91,3 +142,6 @@ st.sidebar.header("Real-Time Updates")
 st.sidebar.write("Click the button below to refresh the analysis.")
 if st.sidebar.button("Refresh Data"):
     st.experimental_rerun()
+
+# Add a timer for updates (optional)
+time.sleep(5)  # Simulate real-time data update every 5 seconds
