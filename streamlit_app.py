@@ -4,7 +4,7 @@ import time
 
 # App Configuration
 st.set_page_config(page_title="Trading Strategy Advisor", layout="wide")
-st.title("📈📉🤖🤖🤖Rabiotic Trading Strategy Advisor with 💯 Reliable Recommendations")
+st.title("Trading Strategy Advisor with Minimal Dependencies")
 
 # Dropdown for market symbols
 market_symbols = [
@@ -23,7 +23,7 @@ selected_symbol = st.selectbox("Select Market Symbol", market_symbols)
 timeframes = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
 selected_timeframe = st.selectbox("Select Timeframe", timeframes)
 
-# Indicator Settings (Manually configurable)
+# Sidebar for indicator settings
 st.sidebar.header("Indicator Settings")
 rsi_period = st.sidebar.slider("RSI Period", 5, 50, 14)
 ema_short_period = st.sidebar.slider("Short EMA Period", 5, 50, 10)
@@ -31,8 +31,9 @@ ema_long_period = st.sidebar.slider("Long EMA Period", 20, 200, 30)
 bb_period = st.sidebar.slider("Bollinger Bands Period", 5, 50, 20)
 bb_dev = st.sidebar.slider("Bollinger Bands Deviation", 0.5, 3.0, 2.0)
 
-# Fetch simulated or API market data
+# Simulated market data
 def fetch_market_data(symbol, timeframe):
+    # Replace this with API calls for live data in production
     num_data_points = 100
     data = {
         "time": list(range(num_data_points)),
@@ -40,7 +41,7 @@ def fetch_market_data(symbol, timeframe):
     }
     return data
 
-# Calculate RSI
+# RSI calculation
 def calculate_rsi(prices, period):
     gains = [max(prices[i] - prices[i - 1], 0) for i in range(1, len(prices))]
     losses = [max(prices[i - 1] - prices[i], 0) for i in range(1, len(prices))]
@@ -57,9 +58,9 @@ def calculate_rsi(prices, period):
         rsi = 100 - (100 / (1 + rs)) if avg_loss != 0 else 100
         rsi_values.append(rsi)
 
-    return rsi_values[-1] if rsi_values else 50
+    return rsi_values[-1] if rsi_values else 50  # Default to neutral RSI if no data
 
-# Calculate EMA
+# EMA calculation
 def calculate_ema(prices, period):
     multiplier = 2 / (period + 1)
     ema = [sum(prices[:period]) / period]
@@ -67,7 +68,7 @@ def calculate_ema(prices, period):
         ema.append((price - ema[-1]) * multiplier + ema[-1])
     return ema[-1]
 
-# Calculate Bollinger Bands
+# Bollinger Bands calculation
 def calculate_bollinger_bands(prices, period, std_dev):
     moving_avg = sum(prices[-period:]) / period
     variance = sum((p - moving_avg) ** 2 for p in prices[-period:]) / period
@@ -75,16 +76,6 @@ def calculate_bollinger_bands(prices, period, std_dev):
     upper_band = moving_avg + (std_dev * std_dev_value)
     lower_band = moving_avg - (std_dev * std_dev_value)
     return upper_band, lower_band
-
-# Calculate TP and SL values
-def calculate_tp_sl(latest_price, strategy):
-    if strategy == "swing":
-        take_profit = latest_price * 1.05  # 5% above latest price
-        stop_loss = latest_price * 0.95   # 5% below latest price
-    elif strategy == "scalping":
-        take_profit = latest_price * 1.01  # 1% above latest price
-        stop_loss = latest_price * 0.99   # 1% below latest price
-    return take_profit, stop_loss
 
 # Fetch data and calculate indicators
 data = fetch_market_data(selected_symbol, selected_timeframe)
@@ -98,17 +89,26 @@ latest_price = close_prices[-1]
 
 # Trading strategy logic
 advice = None
-strategy_type = "swing" if selected_timeframe in ["4h", "1d"] else "scalping"
-take_profit, stop_loss = calculate_tp_sl(latest_price, strategy_type)
+take_profit = None
+stop_loss = None
+entry_price = latest_price
 
 if rsi < 30 and latest_price < bb_lower and ema_short > ema_long:
     advice = "Strong BUY Signal (Oversold)"
+    take_profit = latest_price * 1.05  # 5% profit
+    stop_loss = latest_price * 0.98  # 2% loss
 elif rsi > 70 and latest_price > bb_upper and ema_short < ema_long:
     advice = "Strong SELL Signal (Overbought)"
+    take_profit = latest_price * 0.95  # 5% profit
+    stop_loss = latest_price * 1.02  # 2% loss
 elif ema_short > ema_long:
     advice = "BUY Signal (Uptrend)"
+    take_profit = latest_price * 1.03  # 3% profit
+    stop_loss = latest_price * 0.99  # 1% loss
 elif ema_short < ema_long:
     advice = "SELL Signal (Downtrend)"
+    take_profit = latest_price * 0.97  # 3% profit
+    stop_loss = latest_price * 1.01  # 1% loss
 else:
     advice = "No clear trading signal. Hold for now."
 
@@ -122,12 +122,13 @@ st.write(f"**EMA (Long)**: {ema_long:.2f}")
 st.write(f"**Bollinger Bands**: Upper = {bb_upper:.2f}, Lower = {bb_lower:.2f}")
 st.write(f"**Latest Price**: {latest_price:.2f}")
 st.write(f"**Advice**: {advice}")
-st.write(f"**Take Profit**: {take_profit:.2f}")
-st.write(f"**Stop Loss**: {stop_loss:.2f}")
-st.write(f"**Strategy**: {strategy_type.capitalize()} Trading")
+
+if advice != "No clear trading signal. Hold for now.":
+    st.write(f"**Take Profit**: {take_profit:.2f}")
+    st.write(f"**Stop Loss**: {stop_loss:.2f}")
+    st.write(f"**Entry Price**: {entry_price:.2f}")
 
 # Real-time refresh
 st.sidebar.header("Real-Time Updates")
-st.sidebar.write("Click the button below to refresh the analysis.")
 if st.sidebar.button("Refresh Data"):
     st.experimental_rerun()
