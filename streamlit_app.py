@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import talib
+import pandas_ta as ta
 import random
 
 # Configure Streamlit App
@@ -46,12 +46,14 @@ def fetch_market_data(symbol, timeframe):
 
 # Fetch and display market data
 df = fetch_market_data(selected_symbol, selected_timeframe)
-df['RSI'] = talib.RSI(df['close'], timeperiod=rsi_period)
-df['EMA_Short'] = talib.EMA(df['close'], timeperiod=ema_short_period)
-df['EMA_Long'] = talib.EMA(df['close'], timeperiod=ema_long_period)
-upper_band, _, lower_band = talib.BBANDS(df['close'], timeperiod=bb_period, nbdevup=bb_dev, nbdevdn=bb_dev, matype=0)
-df['BB_Upper'] = upper_band
-df['BB_Lower'] = lower_band
+
+# Calculate technical indicators using pandas_ta
+df['RSI'] = ta.rsi(df['close'], length=rsi_period)
+df['EMA_Short'] = ta.ema(df['close'], length=ema_short_period)
+df['EMA_Long'] = ta.ema(df['close'], length=ema_long_period)
+bb = ta.bbands(df['close'], length=bb_period, std=bb_dev)
+df['BB_Upper'] = bb['BBU_{}'.format(bb_period)]
+df['BB_Lower'] = bb['BBL_{}'.format(bb_period)]
 
 # Display data and indicators
 st.subheader("Market Data with Indicators")
