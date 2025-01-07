@@ -35,7 +35,7 @@ def predict_double_chance(home_draw_odds, home_away_odds, draw_away_odds):
     }
 
 # Streamlit app setup
-st.title("🤖Rabiotic Instant Virtual Football Match Predictor")
+st.title("🤖🤖🤖✅Rabiotic Instant Virtual Football Predictor")
 
 # Inputs for Team A and Team B
 team_a = st.text_input("Enter Team A Name", "Team A")
