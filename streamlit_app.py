@@ -49,9 +49,9 @@ team_a = st.text_input("Enter Team A Name")
 team_b = st.text_input("Enter Team B Name")
 
 # User inputs for Double Chance odds
-home_odds = st.number_input("Enter Home Win Odds", min_value=1.0, step=0.01)
-draw_odds = st.number_input("Enter Draw Odds", min_value=1.0, step=0.01)
-away_odds = st.number_input("Enter Away Win Odds", min_value=1.0, step=0.01)
+home_odds = st.number_input("Enter Home Win Odds", min_value=0.0, step=0.01)
+draw_odds = st.number_input("Enter Draw Odds", min_value=0.0, step=0.01)
+away_odds = st.number_input("Enter Away Win Odds", min_value=0.0, step=0.01)
 
 # Prediction button
 if st.button("Predict Match Outcome"):
