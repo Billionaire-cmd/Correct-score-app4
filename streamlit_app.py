@@ -42,7 +42,7 @@ def predict_outcome(home_odds, draw_odds, away_odds):
 
 # Set up the Streamlit UI
 
-st.title('🤖💯✅Rabiotic Instant Virtuals Football Match Predictor')
+st.title('🤖✅Rabiotic Instant Virtuals Football Match Predictor')
 
 # User inputs for Team A and Team B
 team_a = st.text_input("Enter Team A Name")
